@@ -1,3 +1,19 @@
+# Expensify Release
+
+To publish a new version run the following script, where `<base-version>` is the react-native version that the fork is based on, and `<fork-version>` is the version you want to publish. This will generate a tarball (`react-native-<fork-version>.tgz`) which can then be uploaded to a github release and consumed via npm.
+
+```bash
+node ./scripts/publish-npm-expensify.js --base-version <base-version> --fork-version <fork-version>
+```
+
+For example if the fork is based on react-native@0.71.0 and our fork version is 0.71.3.
+
+```bash
+node ./scripts/publish-npm-expensify.js --base-version 0.71.0 --fork-version 0.71.3
+```
+
+If you encounter build issues you can add the `--clean` flag to delete some folder that might cause some cache issues.
+
 <h1 align="center">
   <a href="https://reactnative.dev/">
     React Native
@@ -56,6 +72,7 @@ React Native is developed and supported by many companies and individual core co
 
 ## Contents
 
+- [Expensify Release](#expensify-release)
 - [Requirements](#-requirements)
 - [Building your first React Native app](#-building-your-first-react-native-app)
 - [Documentation](#-documentation)
