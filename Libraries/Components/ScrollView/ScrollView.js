@@ -278,8 +278,6 @@ type IOSProps = $ReadOnly<{|
    * Caveat 2: This simply uses `contentOffset` and `frame.origin` in native code to compute
    * visibility. Occlusion, transforms, and other complexity won't be taken into account as to
    * whether content is "visible" or not.
-   *
-   * @platform ios
    */
   maintainVisibleContentPosition?: ?$ReadOnly<{|
     minIndexForVisible: number,

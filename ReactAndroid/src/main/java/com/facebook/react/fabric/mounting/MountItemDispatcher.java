@@ -193,6 +193,8 @@ public class MountItemDispatcher {
       return false;
     }
 
+    mItemDispatchListener.willMountItems();
+
     // As an optimization, execute all ViewCommands first
     // This should be:
     // 1) Performant: ViewCommands are often a replacement for SetNativeProps, which we've always
@@ -239,6 +241,8 @@ public class MountItemDispatcher {
                   "Caught exception executing ViewCommand: " + command.toString(), e));
         }
       }
+
+      mItemDispatchListener.didMountItems();
 
       Systrace.endSection(Systrace.TRACE_TAG_REACT_JAVA_BRIDGE);
     }
@@ -411,6 +415,8 @@ public class MountItemDispatcher {
   }
 
   public interface ItemDispatchListener {
+    void willMountItems();
+    void didMountItems();
     void didDispatchMountItems();
   }
 }
