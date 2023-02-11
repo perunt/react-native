@@ -66,7 +66,12 @@ function parseVersion(versionStr, buildType) {
 }
 
 function validateBuildType(buildType) {
-  const validBuildTypes = new Set(['release', 'dry-run', 'nightly']);
+  const validBuildTypes = new Set([
+    'release',
+    'dry-run',
+    'nightly',
+    'expensify',
+  ]);
   if (!validBuildTypes.has(buildType)) {
     throw new Error(`Unsupported build type: ${buildType}`);
   }
@@ -87,6 +92,7 @@ function validateVersion(versionObject, buildType) {
     release: validateRelease,
     'dry-run': validateDryRun,
     nightly: validateNightly,
+    expensify: validateExpensify,
   };
 
   const validationFunction = map[buildType];
@@ -122,6 +128,13 @@ function validateNightly(version) {
   const isValidNightly = isNightlyBuild(version) && isPrerelease;
   if (!isValidNightly) {
     throw new Error(`Version ${version.version} is not valid for nightlies`);
+  }
+}
+
+function validateExpensify(version) {
+  const isValidExpensify = version.prerelease && version.prerelease.match(/alpha\.\d/);
+  if (!isValidExpensify) {
+    throw new Error(`Version ${version.version} is not valid for Expensify`);
   }
 }
 
