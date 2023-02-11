@@ -70,7 +70,6 @@ function validateBuildType(buildType) {
     'release',
     'dry-run',
     'nightly',
-    'expensify',
   ]);
   if (!validBuildTypes.has(buildType)) {
     throw new Error(`Unsupported build type: ${buildType}`);
@@ -92,7 +91,6 @@ function validateVersion(versionObject, buildType) {
     release: validateRelease,
     'dry-run': validateDryRun,
     nightly: validateNightly,
-    expensify: validateExpensify,
   };
 
   const validationFunction = map[buildType];
@@ -131,13 +129,6 @@ function validateNightly(version) {
   }
 }
 
-function validateExpensify(version) {
-  const isValidExpensify = version.prerelease && version.prerelease.match(/alpha\.\d/);
-  if (!isValidExpensify) {
-    throw new Error(`Version ${version.version} is not valid for Expensify`);
-  }
-}
-
 function isStableRelease(version) {
   return (
     version.major === '0' && version.minor !== '0' && version.prerelease == null
@@ -152,6 +143,7 @@ function isStablePrerelease(version) {
     version.prerelease != null &&
     (version.prerelease.startsWith('rc.') ||
       version.prerelease.startsWith('rc-') ||
+      version.prerelease.startsWith('alpha.') ||
       version.prerelease.match(/^(\d{8})-(\d{4})$/))
   );
 }

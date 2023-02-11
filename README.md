@@ -2,19 +2,11 @@
 
 ## Versioning
 
-Before publishing an Expensify Release of this fork, you must first set the correct package version. The version should mirror the upstream tag that it's based off.
-
-For example:
+Before publishing an Expensify Release of this fork, you must first figure out the correct version. The version should mirror the upstream tag that it's based off.
 
 - While writing this, the upstream tag I've based this version of the fork off is `0.71.2`. Since this is our first time publishing the fork under this upstream version, the correct version for the fork is `0.71.2-alpha.0` (and the corresponding git branch should be called `Expensify-0.71.2-alpha.0`)
 - If we publish the fork again without upgrading the fork to be based off a new upstream tag (such as `0.71.3`), then the next version would be `0.71.2-alpha.1`
 - If we publish the fork again with a new upstream tag (such as `0.71.4`), then the alpha should reset, and the correct version would then be `0.71.4-alpha.0`
-
-To update the version on the fork, run the following script:
-
-```bash
-node ./scripts/set-rn-version.js --to-version <fork-version> --build-type expensify
-```
 
 Then commit your changes.
 
