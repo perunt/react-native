@@ -50,7 +50,7 @@ import * as React from 'react';
 
 export type {RenderItemProps, RenderItemType, Separators};
 
-const ON_END_REACHED_EPSILON = 0.001;
+const ON_EDGE_REACHED_EPSILON = 0.001;
 
 let _usedIndexForKey = false;
 let _keylessItemComponentName: string = '';
@@ -68,6 +68,11 @@ type ViewabilityHelperCallbackTuple = {
 type State = {
   renderMask: CellRenderMask,
   cellsAroundViewport: {first: number, last: number},
+  // Used to track items added at the start of the list for maintainVisibleContentPosition.
+  firstItemKey: ?string,
+  // When using maintainVisibleContentPosition we need to adjust the window to make sure
+  // make sure that the visible elements are still rendered.
+  maintainVisibleContentPositionAdjustment: ?number,
 };
 
 /**
@@ -90,9 +95,19 @@ function maxToRenderPerBatchOrDefault(maxToRenderPerBatch: ?number) {
   return maxToRenderPerBatch ?? 10;
 }
 
+// onStartReachedThresholdOrDefault(this.props.onStartReachedThreshold)
+function onStartReachedThresholdOrDefault(onStartReachedThreshold: ?number) {
+  return onStartReachedThreshold ?? 2;
+}
+
 // onEndReachedThresholdOrDefault(this.props.onEndReachedThreshold)
 function onEndReachedThresholdOrDefault(onEndReachedThreshold: ?number) {
   return onEndReachedThreshold ?? 2;
+}
+
+// getScrollingThreshold(visibleLength, onEndReachedThreshold)
+function getScrollingThreshold(threshold: number, visibleLength: number) {
+  return (threshold * visibleLength) / 2;
 }
 
 // scrollEventThrottleOrDefault(this.props.scrollEventThrottle)
@@ -116,6 +131,47 @@ function findLastWhere<T>(
   }
 
   return null;
+}
+
+function extractKey(
+  props: {
+    keyExtractor?: ?(item: Item, index: number) => string,
+    ...
+  },
+  item: Item,
+  index: number,
+): string {
+  if (props.keyExtractor != null) {
+    return props.keyExtractor(item, index);
+  }
+
+  const key = defaultKeyExtractor(item, index);
+  if (key === String(index)) {
+    _usedIndexForKey = true;
+    if (item.type && item.type.displayName) {
+      _keylessItemComponentName = item.type.displayName;
+    }
+  }
+  return key;
+}
+
+function findItemIndexWithKey(props: Props, key: string): ?number {
+  for (let ii = 0; ii < props.getItemCount(props.data); ii++) {
+    const item = props.getItem(props.data, ii);
+    const curKey = extractKey(props, item, ii);
+    if (curKey === key) {
+      return ii;
+    }
+  }
+  return null;
+}
+
+function getItemKey(props: Props, index: number): ?string {
+  const item = props.getItem(props.data, index);
+  if (item == null) {
+    return null;
+  }
+  return extractKey(props, item, 0);
 }
 
 /**
@@ -454,13 +510,20 @@ export default class VirtualizedList extends StateSafePureComponent<
 
     this.state = {
       cellsAroundViewport: initialRenderRegion,
-      renderMask: VirtualizedList._createRenderMask(props, initialRenderRegion),
+      renderMask: VirtualizedList._createRenderMask(
+        props,
+        initialRenderRegion,
+        null,
+      ),
+      firstItemKey: getItemKey(this.props, 0),
+      maintainVisibleContentPositionAdjustment: null,
     };
   }
 
   static _createRenderMask(
     props: Props,
     cellsAroundViewport: {first: number, last: number},
+    maintainVisibleContentPositionAdjustment: ?number,
     additionalRegions?: ?$ReadOnlyArray<{first: number, last: number}>,
   ): CellRenderMask {
     const itemCount = props.getItemCount(props.data);
@@ -497,6 +560,16 @@ export default class VirtualizedList extends StateSafePureComponent<
         renderMask,
         cellsAroundViewport.first,
       );
+
+      if (maintainVisibleContentPositionAdjustment != null) {
+        renderMask.addCells({
+          first:
+            cellsAroundViewport.first +
+            maintainVisibleContentPositionAdjustment,
+          last:
+            cellsAroundViewport.last + maintainVisibleContentPositionAdjustment,
+        });
+      }
     }
 
     return renderMask;
@@ -664,6 +737,21 @@ export default class VirtualizedList extends StateSafePureComponent<
       return prevState;
     }
 
+    let maintainVisibleContentPositionAdjustment =
+      prevState.maintainVisibleContentPositionAdjustment;
+    const newFirstItemKey = getItemKey(newProps, 0);
+    if (
+      newProps.maintainVisibleContentPosition != null &&
+      maintainVisibleContentPositionAdjustment == null &&
+      prevState.firstItemKey != null &&
+      newFirstItemKey != null
+    ) {
+      maintainVisibleContentPositionAdjustment =
+        newFirstItemKey !== prevState.firstItemKey
+          ? findItemIndexWithKey(newProps, prevState.firstItemKey)
+          : null;
+    }
+
     const constrainedCells = VirtualizedList._constrainToItemCount(
       prevState.cellsAroundViewport,
       newProps,
@@ -671,7 +759,13 @@ export default class VirtualizedList extends StateSafePureComponent<
 
     return {
       cellsAroundViewport: constrainedCells,
-      renderMask: VirtualizedList._createRenderMask(newProps, constrainedCells),
+      renderMask: VirtualizedList._createRenderMask(
+        newProps,
+        constrainedCells,
+        maintainVisibleContentPositionAdjustment,
+      ),
+      firstItemKey: newFirstItemKey,
+      maintainVisibleContentPositionAdjustment,
     };
   }
 
@@ -702,7 +796,7 @@ export default class VirtualizedList extends StateSafePureComponent<
     last = Math.min(end, last);
     for (let ii = first; ii <= last; ii++) {
       const item = getItem(data, ii);
-      const key = this._keyExtractor(item, ii, this.props);
+      const key = extractKey(this.props, item, ii);
       this._indicesToKeys.set(ii, key);
       if (stickyIndicesFromProps.has(ii + stickyOffset)) {
         stickyHeaderIndices.push(cells.length);
@@ -770,29 +864,6 @@ export default class VirtualizedList extends StateSafePureComponent<
 
   _getSpacerKey = (isVertical: boolean): string =>
     isVertical ? 'height' : 'width';
-
-  _keyExtractor(
-    item: Item,
-    index: number,
-    props: {
-      keyExtractor?: ?(item: Item, index: number) => string,
-      ...
-    },
-    // $FlowFixMe[missing-local-annot]
-  ) {
-    if (props.keyExtractor != null) {
-      return props.keyExtractor(item, index);
-    }
-
-    const key = defaultKeyExtractor(item, index);
-    if (key === String(index)) {
-      _usedIndexForKey = true;
-      if (item.type && item.type.displayName) {
-        _keylessItemComponentName = item.type.displayName;
-      }
-    }
-    return key;
-  }
 
   render(): React.Node {
     if (__DEV__) {
@@ -1116,6 +1187,7 @@ export default class VirtualizedList extends StateSafePureComponent<
     zoomScale: 1,
   };
   _scrollRef: ?React.ElementRef<any> = null;
+  _sentStartForContentLength = 0;
   _sentEndForContentLength = 0;
   _totalCellLength = 0;
   _totalCellsMeasured = 0;
@@ -1216,6 +1288,7 @@ export default class VirtualizedList extends StateSafePureComponent<
     const renderMask = VirtualizedList._createRenderMask(
       this.props,
       this.state.cellsAroundViewport,
+      this.state.maintainVisibleContentPositionAdjustment,
       this._getNonViewportRenderRegions(this.props),
     );
 
@@ -1303,7 +1376,7 @@ export default class VirtualizedList extends StateSafePureComponent<
     }
     this.props.onLayout && this.props.onLayout(e);
     this._scheduleCellsToRenderUpdate();
-    this._maybeCallOnEndReached();
+    this._maybeCallOnEdgeReached();
   };
 
   _onLayoutEmpty = (e: LayoutEvent) => {
@@ -1412,35 +1485,81 @@ export default class VirtualizedList extends StateSafePureComponent<
     return !horizontalOrDefault(this.props.horizontal) ? metrics.y : metrics.x;
   }
 
-  _maybeCallOnEndReached() {
-    const {data, getItemCount, onEndReached, onEndReachedThreshold} =
-      this.props;
+  _maybeCallOnEdgeReached() {
+    const {
+      data,
+      getItemCount,
+      onStartReached,
+      onStartReachedThreshold,
+      onEndReached,
+      onEndReachedThreshold,
+      initialScrollIndex,
+    } = this.props;
+    if (this.state.maintainVisibleContentPositionAdjustment != null) {
+      return;
+    }
     const {contentLength, visibleLength, offset} = this._scrollMetrics;
+    let distanceFromStart = offset;
     let distanceFromEnd = contentLength - visibleLength - offset;
 
-    // Especially when oERT is zero it's necessary to 'floor' very small distanceFromEnd values to be 0
+    // Especially when oERT is zero it's necessary to 'floor' very small distance values to be 0
     // since debouncing causes us to not fire this event for every single "pixel" we scroll and can thus
-    // be at the "end" of the list with a distanceFromEnd approximating 0 but not quite there.
-    if (distanceFromEnd < ON_END_REACHED_EPSILON) {
+    // be at the edge of the list with a distance approximating 0 but not quite there.
+    if (distanceFromStart < ON_EDGE_REACHED_EPSILON) {
+      distanceFromStart = 0;
+    }
+    if (distanceFromEnd < ON_EDGE_REACHED_EPSILON) {
       distanceFromEnd = 0;
     }
 
     // TODO: T121172172 Look into why we're "defaulting" to a threshold of 2 when oERT is not present
-    const threshold =
-      onEndReachedThreshold != null ? onEndReachedThreshold * visibleLength : 2;
+    const startThreshold =
+      onStartReachedThresholdOrDefault(onStartReachedThreshold) * visibleLength;
+    const endThreshold =
+      onEndReachedThresholdOrDefault(onEndReachedThreshold) * visibleLength;
+    const isWithinStartThreshold = distanceFromStart <= startThreshold;
+    const isWithinEndThreshold = distanceFromEnd <= endThreshold;
+
+    // First check if the user just scrolled within the end threshold
+    // and call onEndReached only once for a given content length,
+    // and only if onStartReached is not being executed
     if (
       onEndReached &&
       this.state.cellsAroundViewport.last === getItemCount(data) - 1 &&
-      distanceFromEnd <= threshold &&
+      isWithinEndThreshold &&
       this._scrollMetrics.contentLength !== this._sentEndForContentLength
     ) {
-      // Only call onEndReached once for a given content length
       this._sentEndForContentLength = this._scrollMetrics.contentLength;
       onEndReached({distanceFromEnd});
-    } else if (distanceFromEnd > threshold) {
-      // If the user scrolls away from the end and back again cause
-      // an onEndReached to be triggered again
-      this._sentEndForContentLength = 0;
+    }
+
+    // Next check if the user just scrolled within the start threshold
+    // and call onStartReached only once for a given content length,
+    // and only if onEndReached is not being executed
+    else if (
+      onStartReached &&
+      this.state.cellsAroundViewport.first === 0 &&
+      isWithinStartThreshold &&
+      this._scrollMetrics.contentLength !== this._sentStartForContentLength &&
+      // On initial mount when using initialScrollIndex the offset will be 0 initially
+      // and will trigger an unexpected onStartReached. To avoid this we can use
+      // timestamp to differentiate between the initial scroll metrics and when we actually
+      // received the first scroll event.
+      (!initialScrollIndex || this._scrollMetrics.timestamp !== 0)
+    ) {
+      this._sentStartForContentLength = this._scrollMetrics.contentLength;
+      onStartReached({distanceFromStart});
+    }
+
+    // If the user scrolls away from the start or end and back again,
+    // cause onStartReached or onEndReached to be triggered again
+    else {
+      this._sentStartForContentLength = isWithinStartThreshold
+        ? this._sentStartForContentLength
+        : 0;
+      this._sentEndForContentLength = isWithinEndThreshold
+        ? this._sentEndForContentLength
+        : 0;
     }
   }
 
@@ -1465,7 +1584,7 @@ export default class VirtualizedList extends StateSafePureComponent<
     }
     this._scrollMetrics.contentLength = this._selectLength({height, width});
     this._scheduleCellsToRenderUpdate();
-    this._maybeCallOnEndReached();
+    this._maybeCallOnEdgeReached();
   };
 
   /* Translates metrics from a scroll event in a parent VirtualizedList into
@@ -1549,11 +1668,16 @@ export default class VirtualizedList extends StateSafePureComponent<
       visibleLength,
       zoomScale,
     };
+    if (this.state.maintainVisibleContentPositionAdjustment != null) {
+      this.setState({
+        maintainVisibleContentPositionAdjustment: null,
+      });
+    }
     this._updateViewableItems(this.props, this.state.cellsAroundViewport);
     if (!this.props) {
       return;
     }
-    this._maybeCallOnEndReached();
+    this._maybeCallOnEdgeReached();
     if (velocity !== 0) {
       this._fillRateHelper.activate();
     }
@@ -1562,21 +1686,30 @@ export default class VirtualizedList extends StateSafePureComponent<
   };
 
   _scheduleCellsToRenderUpdate() {
+    if (this.state.maintainVisibleContentPositionAdjustment != null) {
+      return;
+    }
     const {first, last} = this.state.cellsAroundViewport;
     const {offset, visibleLength, velocity} = this._scrollMetrics;
     const itemCount = this.props.getItemCount(this.props.data);
     let hiPri = false;
+    const onStartReachedThreshold = onStartReachedThresholdOrDefault(
+      this.props.onStartReachedThreshold,
+    );
     const onEndReachedThreshold = onEndReachedThresholdOrDefault(
       this.props.onEndReachedThreshold,
     );
-    const scrollingThreshold = (onEndReachedThreshold * visibleLength) / 2;
     // Mark as high priority if we're close to the start of the first item
     // But only if there are items before the first rendered item
     if (first > 0) {
       const distTop =
         offset - this.__getFrameMetricsApprox(first, this.props).offset;
       hiPri =
-        hiPri || distTop < 0 || (velocity < -2 && distTop < scrollingThreshold);
+        hiPri ||
+        distTop < 0 ||
+        (velocity < -2 &&
+          distTop <
+            getScrollingThreshold(onStartReachedThreshold, visibleLength));
     }
     // Mark as high priority if we're close to the end of the last item
     // But only if there are items after the last rendered item
@@ -1587,7 +1720,9 @@ export default class VirtualizedList extends StateSafePureComponent<
       hiPri =
         hiPri ||
         distBottom < 0 ||
-        (velocity > 2 && distBottom < scrollingThreshold);
+        (velocity > 2 &&
+          distBottom <
+            getScrollingThreshold(onEndReachedThreshold, visibleLength));
     }
     // Only trigger high-priority updates if we've actually rendered cells,
     // and with that size estimate, accurately compute how many cells we should render.
@@ -1660,6 +1795,7 @@ export default class VirtualizedList extends StateSafePureComponent<
       const renderMask = VirtualizedList._createRenderMask(
         props,
         cellsAroundViewport,
+        state.maintainVisibleContentPositionAdjustment,
         this._getNonViewportRenderRegions(props),
       );
 
@@ -1686,7 +1822,7 @@ export default class VirtualizedList extends StateSafePureComponent<
     return {
       index,
       item,
-      key: this._keyExtractor(item, index, props),
+      key: extractKey(props, item, index),
       isViewable,
     };
   };
@@ -1753,7 +1889,8 @@ export default class VirtualizedList extends StateSafePureComponent<
       'Tried to get frame for out of range index ' + index,
     );
     const item = getItem(data, index);
-    const frame = item && this._frames[this._keyExtractor(item, index, props)];
+    const frame =
+      item != null ? this._frames[extractKey(props, item, index)] : undefined;
     if (!frame || frame.index !== index) {
       if (getItemLayout) {
         /* $FlowFixMe[prop-missing] (>=0.63.0 site=react_native_fb) This comment
