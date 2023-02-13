@@ -8,12 +8,14 @@
 package com.facebook.react
 
 import com.android.build.api.variant.AndroidComponentsExtension
+import com.android.build.gradle.AppExtension
 import com.android.build.gradle.internal.tasks.factory.dependsOn
 import com.facebook.react.tasks.BuildCodegenCLITask
 import com.facebook.react.tasks.GenerateCodegenArtifactsTask
 import com.facebook.react.tasks.GenerateCodegenSchemaTask
 import com.facebook.react.utils.AgpConfiguratorUtils.configureBuildConfigFields
 import com.facebook.react.utils.AgpConfiguratorUtils.configureDevPorts
+import com.facebook.react.utils.BackwardCompatUtils.configureBackwardCompatibilityReactMap
 import com.facebook.react.utils.DependencyUtils.configureDependencies
 import com.facebook.react.utils.DependencyUtils.configureRepositories
 import com.facebook.react.utils.DependencyUtils.readVersionString
@@ -46,9 +48,30 @@ class ReactPlugin : Plugin<Project> {
       configureReactNativeNdk(project, extension)
       configureBuildConfigFields(project)
       configureDevPorts(project)
+      configureBackwardCompatibilityReactMap(project)
 
-      project.extensions.getByType(AndroidComponentsExtension::class.java).onVariants { variant ->
-        project.configureReactTasks(variant = variant, config = extension)
+      project.extensions.getByType(AndroidComponentsExtension::class.java).apply {
+        onVariants(selector().all()) { variant ->
+          project.configureReactTasks(variant = variant, config = extension)
+        }
+      }
+
+      // This is a legacy AGP api. Needed as AGP 7.3 is not consuming generated resources correctly.
+      // Can be removed as we bump to AGP 7.4 stable.
+      // This registers the $buildDir/generated/res/react/<variant> folder as a
+      // res folder to be consumed with the old AGP Apis which are not broken.
+      project.extensions.getByType(AppExtension::class.java).apply {
+        this.applicationVariants.all { variant ->
+          val isDebuggableVariant =
+              extension.debuggableVariants.get().any { it.equals(variant.name, ignoreCase = true) }
+          val targetName = variant.name.replaceFirstChar { it.uppercase() }
+          val bundleTaskName = "createBundle${targetName}JsAndAssets"
+          if (!isDebuggableVariant) {
+            variant.registerGeneratedResFolders(
+                project.layout.buildDirectory.files("generated/res/react/${variant.name}"))
+            variant.mergeResourcesProvider.get().dependsOn(bundleTaskName)
+          }
+        }
       }
       configureCodegen(project, extension, isLibrary = false)
     }
@@ -87,6 +110,15 @@ class ReactPlugin : Plugin<Project> {
     // First, we set up the output dir for the codegen.
     val generatedSrcDir = File(project.buildDir, "generated/source/codegen")
 
+    // We specify the default value (convention) for jsRootDir.
+    // It's the root folder for apps (so ../../ from the Gradle project)
+    // and the package folder for library (so ../ from the Gradle project)
+    if (isLibrary) {
+      extension.jsRootDir.convention(project.layout.projectDirectory.dir("../"))
+    } else {
+      extension.jsRootDir.convention(extension.root)
+    }
+
     val buildCodegenTask =
         project.tasks.register("buildCodegenCLI", BuildCodegenCLITask::class.java) {
           it.codegenDir.set(extension.codegenDir)
@@ -96,7 +128,8 @@ class ReactPlugin : Plugin<Project> {
           // Please note that appNeedsCodegen is triggering a read of the package.json at
           // configuration time as we need to feed the onlyIf condition of this task.
           // Therefore, the appNeedsCodegen needs to be invoked inside this lambda.
-          it.onlyIf { isLibrary || project.needsCodegenFromPackageJson(extension) }
+          val needsCodegenFromPackageJson = project.needsCodegenFromPackageJson(extension)
+          it.onlyIf { isLibrary || needsCodegenFromPackageJson }
         }
 
     // We create the task to produce schema from JS files.
@@ -120,7 +153,8 @@ class ReactPlugin : Plugin<Project> {
               } else {
                 it.jsRootDir.set(extension.jsRootDir)
               }
-              it.onlyIf { isLibrary || project.needsCodegenFromPackageJson(parsedPackageJson) }
+              val needsCodegenFromPackageJson = project.needsCodegenFromPackageJson(extension)
+              it.onlyIf { isLibrary || needsCodegenFromPackageJson }
             }
 
     // We create the task to generate Java code from schema.
@@ -130,7 +164,6 @@ class ReactPlugin : Plugin<Project> {
               it.dependsOn(generateCodegenSchemaTask)
               it.reactNativeDir.set(extension.reactNativeDir)
               it.nodeExecutableAndArgs.set(extension.nodeExecutableAndArgs)
-              it.codegenDir.set(extension.codegenDir)
               it.generatedSrcDir.set(generatedSrcDir)
               it.packageJsonFile.set(findPackageJsonFile(project, extension))
               it.codegenJavaPackageName.set(extension.codegenJavaPackageName)
@@ -139,7 +172,8 @@ class ReactPlugin : Plugin<Project> {
               // Please note that appNeedsCodegen is triggering a read of the package.json at
               // configuration time as we need to feed the onlyIf condition of this task.
               // Therefore, the appNeedsCodegen needs to be invoked inside this lambda.
-              it.onlyIf { isLibrary || project.needsCodegenFromPackageJson(extension) }
+              val needsCodegenFromPackageJson = project.needsCodegenFromPackageJson(extension)
+              it.onlyIf { isLibrary || needsCodegenFromPackageJson }
             }
 
     // We update the android configuration to include the generated sources.

@@ -174,7 +174,8 @@ function CenterContentList(): React.Node {
     <ScrollView
       nestedScrollEnabled
       style={styles.scrollView}
-      centerContent={true}>
+      centerContent={true}
+    >
       <Text>This should be in center.</Text>
     </ScrollView>
   );
