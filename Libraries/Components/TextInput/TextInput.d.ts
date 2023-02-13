@@ -272,6 +272,14 @@ export interface TextInputIOSProps {
    * If false, scrolling of the text view will be disabled. The default value is true. Only works with multiline={true}
    */
   scrollEnabled?: boolean | undefined;
+
+  /**
+   * If `false`, the iOS system will not insert an extra space after a paste operation
+   * neither delete one or two spaces after a cut or delete operation.
+   *
+   * The default value is `true`.
+   */
+  smartInsertDelete?: boolean | undefined;
 }
 
 /**
