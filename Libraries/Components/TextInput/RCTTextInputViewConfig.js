@@ -150,6 +150,7 @@ const RCTTextInputViewConfig = {
     showSoftInputOnFocus: true,
     autoFocus: true,
     lineBreakStrategyIOS: true,
+    smartInsertDelete: true,
     ...ConditionallyIgnoredEventHandlers({
       onChange: true,
       onSelectionChange: true,
