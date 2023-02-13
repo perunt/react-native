@@ -299,9 +299,6 @@ public class MountItemDispatcher {
       }
       mBatchedExecutionTime += SystemClock.uptimeMillis() - batchedExecutionStartTime;
     }
-
-    mItemDispatchListener.didMountItems();
-
     Systrace.endSection(Systrace.TRACE_TAG_REACT_JAVA_BRIDGE);
 
     return true;

@@ -185,7 +185,6 @@ function isTestingAgainstLocalHermesTarball() {
 }
 
 function shouldBuildHermesFromSource(isInCI) {
-  return true;
   return !isTestingAgainstLocalHermesTarball() && isInCI;
 }
 
