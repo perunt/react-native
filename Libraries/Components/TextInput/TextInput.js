@@ -524,7 +524,6 @@ type AndroidProps = $ReadOnly<{|
   /**
    * Sets the number of lines for a `TextInput`. Use it with multiline set to
    * `true` to be able to fill the lines.
-   * @platform android
    */
   numberOfLines?: ?number,
 
@@ -537,9 +536,13 @@ type AndroidProps = $ReadOnly<{|
   /**
    * Sets the number of rows for a `TextInput`. Use it with multiline set to
    * `true` to be able to fill the lines.
-   * @platform android
    */
   rows?: ?number,
+
+  /**
+   * Sets the maximum number of lines the TextInput can have.
+   */
+  maximumNumberOfLines?: ?number,
 
   /**
    * When `false`, it will prevent the soft keyboard from showing when the field is focused.
@@ -1082,6 +1085,12 @@ const emptyFunctionThatReturnsTrue = () => true;
  *
  */
 function InternalTextInput(props: Props): React.Node {
+  const {
+    rows,
+    numberOfLines,
+    ...otherProps
+  } = props;
+
   const inputRef = useRef<null | React.ElementRef<HostComponent<mixed>>>(null);
 
   // Android sends a "onTextChanged" event followed by a "onSelectionChanged" event, for
@@ -1428,7 +1437,7 @@ function InternalTextInput(props: Props): React.Node {
     textInput = (
       <RCTTextInputView
         ref={_setNativeRef}
-        {...props}
+        {...otherProps}
         {...eventHandlers}
         accessible={accessible}
         accessibilityState={_accessibilityState}
@@ -1437,6 +1446,7 @@ function InternalTextInput(props: Props): React.Node {
         dataDetectorTypes={props.dataDetectorTypes}
         focusable={focusable}
         mostRecentEventCount={mostRecentEventCount}
+        numberOfLines={props.rows ?? props.numberOfLines}
         onBlur={_onBlur}
         onKeyPressSync={props.unstable_onKeyPressSync}
         onChange={_onChange}
@@ -1478,7 +1488,7 @@ function InternalTextInput(props: Props): React.Node {
        * fixed */
       <AndroidTextInput
         ref={_setNativeRef}
-        {...props}
+        {...otherProps}
         {...eventHandlers}
         accessible={accessible}
         accessibilityState={_accessibilityState}

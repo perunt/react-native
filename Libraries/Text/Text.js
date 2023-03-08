@@ -59,6 +59,7 @@ const Text: React.AbstractComponent<
     pressRetentionOffset,
     role,
     suppressHighlighting,
+    numberOfLines,
     ...restProps
   } = props;
 
@@ -196,12 +197,12 @@ const Text: React.AbstractComponent<
     }
   }
 
-  let numberOfLines = restProps.numberOfLines;
+  let numberOfLinesValue = numberOfLines;
   if (numberOfLines != null && !(numberOfLines >= 0)) {
     console.error(
       `'numberOfLines' in <Text> must be a non-negative number, received: ${numberOfLines}. The value will be set to 0.`,
     );
-    numberOfLines = 0;
+    numberOfLinesValue = 0;
   }
 
   const hasTextAncestor = useContext(TextAncestor);
@@ -233,7 +234,7 @@ const Text: React.AbstractComponent<
       isPressable={isPressable}
       selectable={_selectable}
       nativeID={id ?? nativeID}
-      numberOfLines={numberOfLines}
+      maximumNumberOfLines={numberOfLinesValue}
       selectionColor={selectionColor}
       style={flattenedStyle}
       ref={forwardedRef}
@@ -259,7 +260,7 @@ const Text: React.AbstractComponent<
         ellipsizeMode={ellipsizeMode ?? 'tail'}
         isHighlighted={isHighlighted}
         nativeID={id ?? nativeID}
-        numberOfLines={numberOfLines}
+        maximumNumberOfLines={numberOfLinesValue}
         selectionColor={selectionColor}
         style={flattenedStyle}
         ref={forwardedRef}

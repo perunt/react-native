@@ -80,6 +80,12 @@ const styles = StyleSheet.create({
     fontSize: 13,
     padding: 4,
   },
+  textInputLines: {
+    borderWidth: 1,
+    borderColor: 'black',
+    padding: 0,
+    textAlignVertical: Platform.OS === 'android' ? 'top' : undefined,
+  },
 });
 
 class WithLabel extends React.Component<$FlowFixMeProps> {
@@ -869,6 +875,52 @@ module.exports = ([
     name: 'uncontrolledComponent',
     render: function (): React.Node {
       return <UncontrolledExample />;
+    },
+  },
+  {
+    title: 'Height in rows/lines',
+    name: 'rows',
+    render: function (): React.Node {
+      return (
+        <View>
+          <TextInput
+            numberOfLines={2}
+            multiline={true}
+            style={[styles.textInputLines, {marginBottom: 10}]}
+            placeholder="Two line input using numberOfLines prop"
+          />
+          <TextInput
+            numberOfLines={5}
+            multiline={true}
+            style={[styles.textInputLines, {marginBottom: 10}]}
+            placeholder="Five line input using numberOfLines prop"
+          />
+          <TextInput
+            rows={2}
+            multiline={true}
+            style={[styles.textInputLines, {marginBottom: 10}]}
+            placeholder="Two line input using rows prop"
+          />
+          <TextInput
+            rows={5}
+            multiline={true}
+            style={[styles.textInputLines, {marginBottom: 10}]}
+            placeholder="Five line input using rows prop"
+          />
+          <TextInput
+            maximumNumberOfLines={2}
+            multiline={true}
+            style={[styles.textInputLines, {marginBottom: 10}]}
+            placeholder="At most 2 lines"
+          />
+          <TextInput
+            maximumNumberOfLines={5}
+            multiline={true}
+            style={styles.textInputLines}
+            placeholder="At most 5 lines"
+          />
+        </View>
+      );
     },
   },
 ]: Array<RNTesterModuleExample>);
