@@ -613,7 +613,6 @@ export default class VirtualizedList extends StateSafePureComponent<
     const onEndReachedThreshold = onEndReachedThresholdOrDefault(
       props.onEndReachedThreshold,
     );
-    this._updateViewableItems(props, cellsAroundViewport);
 
     const {contentLength, offset, visibleLength} = this._scrollMetrics;
     const distanceFromEnd = contentLength - visibleLength - offset;
@@ -1796,6 +1795,8 @@ export default class VirtualizedList extends StateSafePureComponent<
   };
 
   _updateCellsToRender = () => {
+    this._updateViewableItems(this.props, this.state.cellsAroundViewport);
+
     this.setState((state, props) => {
       const cellsAroundViewport = this._adjustCellsAroundViewport(
         props,
