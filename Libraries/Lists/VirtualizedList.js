@@ -1125,7 +1125,7 @@ export default class VirtualizedList extends StateSafePureComponent<
     }
   }
 
-  componentDidUpdate(prevProps: Props) {
+  componentDidUpdate(prevProps: Props, prevState: State) {
     const {data, extraData} = this.props;
     if (data !== prevProps.data || extraData !== prevProps.extraData) {
       // clear the viewableIndices cache to also trigger
@@ -1146,6 +1146,15 @@ export default class VirtualizedList extends StateSafePureComponent<
     // is triggered with `this._hiPriInProgress = true`
     if (hiPriInProgress) {
       this._hiPriInProgress = false;
+    }
+
+    // Make sure to cancel any pending updates if maintainVisibleContentPositionAdjustment
+    // changed since they are now invalid.
+    if (
+      prevState.maintainVisibleContentPositionAdjustment !==
+      this.state.maintainVisibleContentPositionAdjustment
+    ) {
+      this._updateCellsToRenderBatcher.dispose({abort: true});
     }
   }
 
