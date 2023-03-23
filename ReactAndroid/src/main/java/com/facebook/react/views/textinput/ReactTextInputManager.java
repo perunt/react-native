@@ -1203,6 +1203,8 @@ public class ReactTextInputManager extends BaseViewManager<ReactEditText, Layout
 
         mPreviousSelectionStart = realStart;
         mPreviousSelectionEnd = realEnd;
+
+        Log.d("OnSelectionChanged", "Onchange Works");
       }
     }
   }
