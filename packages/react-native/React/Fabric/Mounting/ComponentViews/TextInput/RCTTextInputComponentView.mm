@@ -184,6 +184,21 @@ using namespace facebook::react;
     }
   }
 
+  /*
+   * When updating component's props, we compare if the new value is different from the old one.
+   * If it is different, we update the native view with the new value.
+   *
+   * `RCTUITextSmartInsertDeleteTypeFromOptionalBool` is used to convert the boolean value coming
+   * from JS side to the appropriate `UITextSmartInsertDeleteType` value, that is required for
+   * this `smartInsertDeleteType` attribute.
+   */
+  if (newTextInputProps.traits.smartInsertDelete != oldTextInputProps.traits.smartInsertDelete) {
+    if (@available(iOS 11.0, *)) {
+      _backedTextInputView.smartInsertDeleteType =
+          RCTUITextSmartInsertDeleteTypeFromOptionalBool(newTextInputProps.traits.smartInsertDelete);
+    }
+  }
+
   // Traits `blurOnSubmit`, `clearTextOnFocus`, and `selectTextOnFocus` were omitted intentionally here
   // because they are being checked on-demand.
 

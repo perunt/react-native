@@ -325,6 +325,16 @@ type IOSProps = $ReadOnly<{|
    * @platform ios
    */
   lineBreakStrategyIOS?: ?('none' | 'standard' | 'hangul-word' | 'push-out'),
+
+  /**
+   * If `false`, the iOS system will not insert an extra space after a paste operation
+   * neither delete one or two spaces after a cut or delete operation.
+   *
+   * The default value is `true`.
+   *
+   * @platform ios
+   */
+  smartInsertDelete?: ?boolean,
 |}>;
 
 type AndroidProps = $ReadOnly<{|
@@ -479,24 +489,10 @@ type AndroidProps = $ReadOnly<{|
   inlineImagePadding?: ?number,
 
   /**
-   * Sets the number of lines for a `TextInput`. Use it with multiline set to
-   * `true` to be able to fill the lines.
-   * @platform android
-   */
-  numberOfLines?: ?number,
-
-  /**
    * Sets the return key to the label. Use it instead of `returnKeyType`.
    * @platform android
    */
   returnKeyLabel?: ?string,
-
-  /**
-   * Sets the number of rows for a `TextInput`. Use it with multiline set to
-   * `true` to be able to fill the lines.
-   * @platform android
-   */
-  rows?: ?number,
 
   /**
    * When `false`, it will prevent the soft keyboard from showing when the field is focused.
@@ -647,6 +643,12 @@ export type Props = $ReadOnly<{|
   keyboardType?: ?KeyboardType,
 
   /**
+   * Sets the maximum number of lines for a `TextInput`. Use it with multiline set to
+   * `true` to be able to fill the lines.
+   */
+  maximumNumberOfLines?: ?number,
+
+  /**
    * Specifies largest possible scale a font can reach when `allowFontScaling` is enabled.
    * Possible values:
    * `null/undefined` (default): inherit from the parent node or the global default (0)
@@ -666,6 +668,12 @@ export type Props = $ReadOnly<{|
    * The default value is `false`.
    */
   multiline?: ?boolean,
+
+  /**
+   * Sets the number of lines for a `TextInput`. Use it with multiline set to
+   * `true` to be able to fill the lines.
+   */
+  numberOfLines?: ?number,
 
   /**
    * Callback that is called when the text input is blurred.
@@ -827,6 +835,12 @@ export type Props = $ReadOnly<{|
    * - `yahoo`
    */
   returnKeyType?: ?ReturnKeyType,
+
+  /**
+   * Sets the number of rows for a `TextInput`. Use it with multiline set to
+   * `true` to be able to fill the lines.
+   */
+  rows?: ?number,
 
   /**
    * If `true`, the text input obscures the text entered so that sensitive text

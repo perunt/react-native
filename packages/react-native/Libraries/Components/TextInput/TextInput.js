@@ -366,6 +366,16 @@ type IOSProps = $ReadOnly<{|
    * @platform ios
    */
   lineBreakStrategyIOS?: ?('none' | 'standard' | 'hangul-word' | 'push-out'),
+
+  /**
+   * If `false`, the iOS system will not insert an extra space after a paste operation
+   * neither delete one or two spaces after a cut or delete operation.
+   *
+   * The default value is `true`.
+   *
+   * @platform ios
+   */
+  smartInsertDelete?: ?boolean,
 |}>;
 
 type AndroidProps = $ReadOnly<{|
@@ -522,7 +532,6 @@ type AndroidProps = $ReadOnly<{|
   /**
    * Sets the number of lines for a `TextInput`. Use it with multiline set to
    * `true` to be able to fill the lines.
-   * @platform android
    */
   numberOfLines?: ?number,
 
@@ -535,9 +544,13 @@ type AndroidProps = $ReadOnly<{|
   /**
    * Sets the number of rows for a `TextInput`. Use it with multiline set to
    * `true` to be able to fill the lines.
-   * @platform android
    */
   rows?: ?number,
+
+  /**
+   * Sets the maximum number of lines the TextInput can have.
+   */
+  maximumNumberOfLines?: ?number,
 
   /**
    * When `false`, it will prevent the soft keyboard from showing when the field is focused.
@@ -1080,6 +1093,8 @@ function InternalTextInput(props: Props): React.Node {
     accessibilityState,
     id,
     tabIndex,
+    rows,
+    numberOfLines,
     ...otherProps
   } = props;
 
@@ -1449,6 +1464,7 @@ function InternalTextInput(props: Props): React.Node {
         dataDetectorTypes={props.dataDetectorTypes}
         focusable={tabIndex !== undefined ? !tabIndex : focusable}
         mostRecentEventCount={mostRecentEventCount}
+        numberOfLines={props.rows ?? props.numberOfLines}
         nativeID={id ?? props.nativeID}
         onBlur={_onBlur}
         onKeyPressSync={props.unstable_onKeyPressSync}

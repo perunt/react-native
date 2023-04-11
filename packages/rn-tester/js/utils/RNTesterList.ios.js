@@ -267,6 +267,10 @@ const APIs: Array<RNTesterModuleInfo> = [
     module: require('../examples/TurboModule/TurboCxxModuleExample'),
   },
   {
+    key: 'TurboCxxModuleExample',
+    module: require('../examples/TurboModule/TurboCxxModuleExample'),
+  },
+  {
     key: 'VibrationExample',
     module: require('../examples/Vibration/VibrationExample'),
   },

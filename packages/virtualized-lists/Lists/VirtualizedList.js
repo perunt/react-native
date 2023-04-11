@@ -73,6 +73,11 @@ type ViewabilityHelperCallbackTuple = {
 type State = {
   renderMask: CellRenderMask,
   cellsAroundViewport: {first: number, last: number},
+  // Used to track items added at the start of the list for maintainVisibleContentPosition.
+  firstItemKey: ?string,
+  // When using maintainVisibleContentPosition we need to adjust the window to make sure
+  // make sure that the visible elements are still rendered.
+  maintainVisibleContentPositionAdjustment: ?number,
 };
 
 /**
@@ -131,6 +136,47 @@ function findLastWhere<T>(
   }
 
   return null;
+}
+
+function extractKey(
+  props: {
+    keyExtractor?: ?(item: Item, index: number) => string,
+    ...
+  },
+  item: Item,
+  index: number,
+): string {
+  if (props.keyExtractor != null) {
+    return props.keyExtractor(item, index);
+  }
+
+  const key = defaultKeyExtractor(item, index);
+  if (key === String(index)) {
+    _usedIndexForKey = true;
+    if (item.type && item.type.displayName) {
+      _keylessItemComponentName = item.type.displayName;
+    }
+  }
+  return key;
+}
+
+function findItemIndexWithKey(props: Props, key: string): ?number {
+  for (let ii = 0; ii < props.getItemCount(props.data); ii++) {
+    const item = props.getItem(props.data, ii);
+    const curKey = extractKey(props, item, ii);
+    if (curKey === key) {
+      return ii;
+    }
+  }
+  return null;
+}
+
+function getItemKey(props: Props, index: number): ?string {
+  const item = props.getItem(props.data, index);
+  if (item == null) {
+    return null;
+  }
+  return extractKey(props, item, 0);
 }
 
 /**
@@ -450,7 +496,13 @@ class VirtualizedList extends StateSafePureComponent<Props, State> {
 
     this.state = {
       cellsAroundViewport: initialRenderRegion,
-      renderMask: VirtualizedList._createRenderMask(props, initialRenderRegion),
+      renderMask: VirtualizedList._createRenderMask(
+        props,
+        initialRenderRegion,
+        null,
+      ),
+      firstItemKey: getItemKey(this.props, 0),
+      maintainVisibleContentPositionAdjustment: null,
     };
   }
 
@@ -505,6 +557,7 @@ class VirtualizedList extends StateSafePureComponent<Props, State> {
   static _createRenderMask(
     props: Props,
     cellsAroundViewport: {first: number, last: number},
+    maintainVisibleContentPositionAdjustment: ?number,
     additionalRegions?: ?$ReadOnlyArray<{first: number, last: number}>,
   ): CellRenderMask {
     const itemCount = props.getItemCount(props.data);
@@ -541,6 +594,16 @@ class VirtualizedList extends StateSafePureComponent<Props, State> {
         renderMask,
         cellsAroundViewport.first,
       );
+
+      if (maintainVisibleContentPositionAdjustment != null) {
+        renderMask.addCells({
+          first:
+            cellsAroundViewport.first +
+            maintainVisibleContentPositionAdjustment,
+          last:
+            cellsAroundViewport.last + maintainVisibleContentPositionAdjustment,
+        });
+      }
     }
 
     return renderMask;
@@ -590,6 +653,7 @@ class VirtualizedList extends StateSafePureComponent<Props, State> {
     const onEndReachedThreshold = onEndReachedThresholdOrDefault(
       props.onEndReachedThreshold,
     );
+
     const {contentLength, offset, visibleLength} = this._scrollMetrics;
     const distanceFromEnd = contentLength - visibleLength - offset;
 
@@ -712,6 +776,21 @@ class VirtualizedList extends StateSafePureComponent<Props, State> {
       return prevState;
     }
 
+    let maintainVisibleContentPositionAdjustment =
+      prevState.maintainVisibleContentPositionAdjustment;
+    const newFirstItemKey = getItemKey(newProps, 0);
+    if (
+      newProps.maintainVisibleContentPosition != null &&
+      maintainVisibleContentPositionAdjustment == null &&
+      prevState.firstItemKey != null &&
+      newFirstItemKey != null
+    ) {
+      maintainVisibleContentPositionAdjustment =
+        newFirstItemKey !== prevState.firstItemKey
+          ? findItemIndexWithKey(newProps, prevState.firstItemKey)
+          : null;
+    }
+
     const constrainedCells = VirtualizedList._constrainToItemCount(
       prevState.cellsAroundViewport,
       newProps,
@@ -719,7 +798,13 @@ class VirtualizedList extends StateSafePureComponent<Props, State> {
 
     return {
       cellsAroundViewport: constrainedCells,
-      renderMask: VirtualizedList._createRenderMask(newProps, constrainedCells),
+      renderMask: VirtualizedList._createRenderMask(
+        newProps,
+        constrainedCells,
+        maintainVisibleContentPositionAdjustment,
+      ),
+      firstItemKey: newFirstItemKey,
+      maintainVisibleContentPositionAdjustment,
     };
   }
 
@@ -751,8 +836,7 @@ class VirtualizedList extends StateSafePureComponent<Props, State> {
 
     for (let ii = first; ii <= last; ii++) {
       const item = getItem(data, ii);
-      const key = this._keyExtractor(item, ii, this.props);
-
+      const key = extractKey(this.props, item, ii);
       this._indicesToKeys.set(ii, key);
       if (stickyIndicesFromProps.has(ii + stickyOffset)) {
         stickyHeaderIndices.push(cells.length);
@@ -823,29 +907,6 @@ class VirtualizedList extends StateSafePureComponent<Props, State> {
 
   _getSpacerKey = (isVertical: boolean): string =>
     isVertical ? 'height' : 'width';
-
-  _keyExtractor(
-    item: Item,
-    index: number,
-    props: {
-      keyExtractor?: ?(item: Item, index: number) => string,
-      ...
-    },
-    // $FlowFixMe[missing-local-annot]
-  ) {
-    if (props.keyExtractor != null) {
-      return props.keyExtractor(item, index);
-    }
-
-    const key = defaultKeyExtractor(item, index);
-    if (key === String(index)) {
-      _usedIndexForKey = true;
-      if (item.type && item.type.displayName) {
-        _keylessItemComponentName = item.type.displayName;
-      }
-    }
-    return key;
-  }
 
   render(): React.Node {
     this._checkProps(this.props);
@@ -1099,7 +1160,7 @@ class VirtualizedList extends StateSafePureComponent<Props, State> {
     }
   }
 
-  componentDidUpdate(prevProps: Props) {
+  componentDidUpdate(prevProps: Props, prevState: State) {
     const {data, extraData} = this.props;
     if (data !== prevProps.data || extraData !== prevProps.extraData) {
       // clear the viewableIndices cache to also trigger
@@ -1120,6 +1181,15 @@ class VirtualizedList extends StateSafePureComponent<Props, State> {
     // is triggered with `this._hiPriInProgress = true`
     if (hiPriInProgress) {
       this._hiPriInProgress = false;
+    }
+
+    // Make sure to cancel any pending updates if maintainVisibleContentPositionAdjustment
+    // changed since they are now invalid.
+    if (
+      prevState.maintainVisibleContentPositionAdjustment !==
+      this.state.maintainVisibleContentPositionAdjustment
+    ) {
+      this._updateCellsToRenderBatcher.dispose({abort: true});
     }
   }
 
@@ -1260,6 +1330,19 @@ class VirtualizedList extends StateSafePureComponent<Props, State> {
   _onCellFocusCapture(cellKey: string) {
     this._lastFocusedCellKey = cellKey;
     this._updateCellsToRender();
+    const renderMask = VirtualizedList._createRenderMask(
+      this.props,
+      this.state.cellsAroundViewport,
+      this.state.maintainVisibleContentPositionAdjustment,
+      this._getNonViewportRenderRegions(this.props),
+    );
+
+    this.setState(state => {
+      if (!renderMask.equals(state.renderMask)) {
+        return {renderMask};
+      }
+      return null;
+    });
   }
 
   _onCellUnmount = (cellKey: string) => {
@@ -1643,6 +1726,11 @@ class VirtualizedList extends StateSafePureComponent<Props, State> {
       visibleLength,
       zoomScale,
     };
+    if (this.state.maintainVisibleContentPositionAdjustment != null) {
+      this.setState({
+        maintainVisibleContentPositionAdjustment: null,
+      });
+    }
     this._updateViewableItems(this.props, this.state.cellsAroundViewport);
     if (!this.props) {
       return;
@@ -1656,6 +1744,9 @@ class VirtualizedList extends StateSafePureComponent<Props, State> {
   };
 
   _scheduleCellsToRenderUpdate() {
+    if (this.state.maintainVisibleContentPositionAdjustment != null) {
+      return;
+    }
     const {first, last} = this.state.cellsAroundViewport;
     const {offset, visibleLength, velocity} = this._scrollMetrics;
     const itemCount = this.props.getItemCount(this.props.data);
@@ -1762,6 +1853,7 @@ class VirtualizedList extends StateSafePureComponent<Props, State> {
       const renderMask = VirtualizedList._createRenderMask(
         props,
         cellsAroundViewport,
+        state.maintainVisibleContentPositionAdjustment,
         this._getNonViewportRenderRegions(props),
       );
 
@@ -1788,7 +1880,7 @@ class VirtualizedList extends StateSafePureComponent<Props, State> {
     return {
       index,
       item,
-      key: this._keyExtractor(item, index, props),
+      key: extractKey(props, item, index),
       isViewable,
     };
   };
@@ -1855,7 +1947,8 @@ class VirtualizedList extends StateSafePureComponent<Props, State> {
       'Tried to get frame for out of range index ' + index,
     );
     const item = getItem(data, index);
-    const frame = this._frames[this._keyExtractor(item, index, props)];
+    const frame =
+      item != null ? this._frames[extractKey(props, item, index)] : undefined;
     if (!frame || frame.index !== index) {
       if (getItemLayout) {
         /* $FlowFixMe[prop-missing] (>=0.63.0 site=react_native_fb) This comment

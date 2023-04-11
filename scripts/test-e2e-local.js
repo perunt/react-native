@@ -94,7 +94,7 @@ if (argv.target === 'RNTester') {
     exec(
       `USE_HERMES=${
         argv.hermes ? 1 : 0
-      } CI=${onReleaseBranch} RCT_NEW_ARCH_ENABLED=1 bundle exec pod install --ansi`,
+      } REACT_NATIVE_CI=${onReleaseBranch} RCT_NEW_ARCH_ENABLED=1 bundle exec pod install --ansi`,
     );
 
     // if everything succeeded so far, we can launch Metro and the app
@@ -145,6 +145,10 @@ if (argv.target === 'RNTester') {
 
   // we need to add the unique timestamp to avoid npm/yarn to use some local caches
   const baseVersion = require('../packages/react-native/package.json').version;
+
+  // in local testing, 1000.0.0 mean we are on main, every other case means we are
+  // working on a release version
+  const buildType = baseVersion !== '1000.0.0' ? 'release' : 'dry-run';
 
   // in local testing, 1000.0.0 mean we are on main, every other case means we are
   // working on a release version

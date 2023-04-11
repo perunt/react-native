@@ -18,6 +18,7 @@ import {type TextProps} from './TextProps';
 
 type NativeTextProps = $ReadOnly<{
   ...TextProps,
+  maximumNumberOfLines?: ?number,
   isHighlighted?: ?boolean,
   selectionColor?: ?ProcessedColorValue,
   onClick?: ?(event: PressEvent) => mixed,
@@ -31,7 +32,7 @@ const textViewConfig = {
   validAttributes: {
     isHighlighted: true,
     isPressable: true,
-    numberOfLines: true,
+    maximumNumberOfLines: true,
     ellipsizeMode: true,
     allowFontScaling: true,
     dynamicTypeRamp: true,

@@ -274,6 +274,14 @@ export interface TextInputIOSProps {
   scrollEnabled?: boolean | undefined;
 
   /**
+   * If `false`, the iOS system will not insert an extra space after a paste operation
+   * neither delete one or two spaces after a cut or delete operation.
+   *
+   * The default value is `true`.
+   */
+  smartInsertDelete?: boolean | undefined;
+
+  /**
    * Set line break strategy on iOS.
    */
   lineBreakStrategyIOS?:
@@ -423,12 +431,6 @@ export interface TextInputAndroidProps {
    * Padding between the inline image, if any, and the text input itself.
    */
   inlineImagePadding?: number | undefined;
-
-  /**
-   * Sets the number of lines for a TextInput.
-   * Use it with multiline set to true to be able to fill the lines.
-   */
-  numberOfLines?: number | undefined;
 
   /**
    * Sets the return key to the label. Use it instead of `returnKeyType`.
@@ -620,9 +622,27 @@ export interface TextInputProps
   maxLength?: number | undefined;
 
   /**
+   * Sets the maximum number of lines for a TextInput.
+   * Use it with multiline set to true to be able to fill the lines.
+   */
+  maximumNumberOfLines?: number | undefined;
+
+  /**
    * If true, the text input can be multiple lines. The default value is false.
    */
   multiline?: boolean | undefined;
+
+  /**
+   * Sets the number of lines for a TextInput.
+   * Use it with multiline set to true to be able to fill the lines.
+   */
+  numberOfLines?: number | undefined;
+
+  /**
+   * Sets the number of rows for a TextInput.
+   * Use it with multiline set to true to be able to fill the lines.
+   */
+  rows?: number | undefined;
 
   /**
    * Callback that is called when the text input is blurred

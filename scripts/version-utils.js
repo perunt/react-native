@@ -135,6 +135,7 @@ function isStablePrerelease(version) {
     version.prerelease != null &&
     (version.prerelease.startsWith('rc.') ||
       version.prerelease.startsWith('rc-') ||
+      version.prerelease.startsWith('alpha.') ||
       version.prerelease.match(/^(\d{8})-(\d{4})$/))
   );
 }

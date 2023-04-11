@@ -56,6 +56,10 @@ AndroidTextInputProps::AndroidTextInputProps(
           "numberOfLines",
           sourceProps.numberOfLines,
           {0})),
+      maximumNumberOfLines(CoreFeatures::enablePropIteratorSetter? sourceProps.maximumNumberOfLines : convertRawProp(context, rawProps,
+            "maximumNumberOfLines",
+            sourceProps.maximumNumberOfLines,
+            {0})),
       disableFullscreenUI(CoreFeatures::enablePropIteratorSetter? sourceProps.disableFullscreenUI : convertRawProp(context, rawProps,
           "disableFullscreenUI",
           sourceProps.disableFullscreenUI,
@@ -283,6 +287,12 @@ void AndroidTextInputProps::setProp(
         value,
         paragraphAttributes,
         maximumNumberOfLines,
+        "maximumNumberOfLines");
+    REBUILD_FIELD_SWITCH_CASE(
+        paDefaults,
+        value,
+        paragraphAttributes,
+        numberOfLines,
         "numberOfLines");
     REBUILD_FIELD_SWITCH_CASE(
         paDefaults, value, paragraphAttributes, ellipsizeMode, "ellipsizeMode");
@@ -328,6 +338,7 @@ void AndroidTextInputProps::setProp(
     RAW_SET_PROP_SWITCH_CASE_BASIC(autoComplete);
     RAW_SET_PROP_SWITCH_CASE_BASIC(returnKeyLabel);
     RAW_SET_PROP_SWITCH_CASE_BASIC(numberOfLines);
+    RAW_SET_PROP_SWITCH_CASE_BASIC(maximumNumberOfLines, 0);
     RAW_SET_PROP_SWITCH_CASE_BASIC(disableFullscreenUI);
     RAW_SET_PROP_SWITCH_CASE_BASIC(textBreakStrategy);
     RAW_SET_PROP_SWITCH_CASE_BASIC(underlineColorAndroid);
@@ -425,6 +436,7 @@ void AndroidTextInputProps::setProp(
 // TODO T53300085: support this in codegen; this was hand-written
 folly::dynamic AndroidTextInputProps::getDynamic() const {
   folly::dynamic props = folly::dynamic::object();
+  props["maximumNumberOfLines"] = maximumNumberOfLines;
   props["autoComplete"] = autoComplete;
   props["returnKeyLabel"] = returnKeyLabel;
   props["numberOfLines"] = numberOfLines;

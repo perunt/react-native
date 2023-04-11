@@ -23,6 +23,7 @@
 #import "RCTCustomPullToRefreshViewProtocol.h"
 #import "RCTEnhancedScrollView.h"
 #import "RCTFabricComponentsPlugins.h"
+#import "RCTPullToRefreshViewComponentView.h"
 
 using namespace facebook::react;
 
