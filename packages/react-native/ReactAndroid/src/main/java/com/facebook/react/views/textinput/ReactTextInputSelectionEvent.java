@@ -59,6 +59,7 @@ import com.facebook.react.uimanager.events.Event;
 
     WritableMap selectionData = Arguments.createMap();
     selectionData.putInt("end", mSelectionEnd);
+    selectionData.putInt("start", mSelectionStart);
     selectionData.putDouble("cursorPositionX", mCursorPositionX);
     selectionData.putDouble("cursorPositionY", mCursorPositionY);
 
