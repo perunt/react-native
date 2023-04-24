@@ -1243,15 +1243,17 @@ public class ReactTextInputManager extends BaseViewManager<ReactEditText, Layout
     public void onSelectionChanged(int start, int end) {
       // Calculate cursor position
       Layout layout = mReactEditText.getLayout();
-      if (mReactEditText.getLayout() == null) {
-            mReactEditText.getViewTreeObserver().addOnGlobalLayoutListener(new ViewTreeObserver.OnGlobalLayoutListener() {
-                @Override
-                public void onGlobalLayout() {
-                    mReactEditText.getViewTreeObserver().removeOnGlobalLayoutListener(this);
-                    onSelectionChanged(start, end);
-                }
-            });
-            return;
+
+      // Wait for the TextInput to mount, if needed
+      if (layout == null) {
+        mReactEditText.getViewTreeObserver().addOnGlobalLayoutListener(new ViewTreeObserver.OnGlobalLayoutListener() {
+          @Override
+          public void onGlobalLayout() {
+            mReactEditText.getViewTreeObserver().removeOnGlobalLayoutListener(this);
+            onSelectionChanged(start, end);
+          }
+        });
+        return;
         }
 
       int line = layout.getLineForOffset(start);
@@ -1273,8 +1275,8 @@ public class ReactTextInputManager extends BaseViewManager<ReactEditText, Layout
             new ReactTextInputSelectionEvent(
                 mSurfaceId,
                 mReactEditText.getId(),
-                realStart, 
-                realEnd, 
+                realStart,
+                realEnd,
                 Math.round(PixelUtil.toDIPFromPixel(cursorPositionX)),
                 Math.round(PixelUtil.toDIPFromPixel(cursorPositionY))));
 
