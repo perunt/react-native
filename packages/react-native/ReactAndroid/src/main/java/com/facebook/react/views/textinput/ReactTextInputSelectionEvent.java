@@ -19,17 +19,31 @@ import com.facebook.react.uimanager.events.Event;
 
   private int mSelectionStart;
   private int mSelectionEnd;
+  private float mCursorPositionX;
+  private float mCursorPositionY;
 
   @Deprecated
-  public ReactTextInputSelectionEvent(int viewId, int selectionStart, int selectionEnd) {
-    this(-1, viewId, selectionStart, selectionEnd);
+  public ReactTextInputSelectionEvent(
+      int viewId,
+      int selectionStart,
+      int selectionEnd,
+      float cursorPositionX,
+      float cursorPositionY) {
+    this(-1, viewId, selectionStart, selectionEnd, cursorPositionX, cursorPositionY);
   }
 
   public ReactTextInputSelectionEvent(
-      int surfaceId, int viewId, int selectionStart, int selectionEnd) {
+      int surfaceId,
+      int viewId,
+      int selectionStart,
+      int selectionEnd,
+      float cursorPositionX,
+      float cursorPositionY) {
     super(surfaceId, viewId);
     mSelectionStart = selectionStart;
     mSelectionEnd = selectionEnd;
+    mCursorPositionX = cursorPositionX;
+    mCursorPositionY = cursorPositionY;
   }
 
   @Override
@@ -45,6 +59,8 @@ import com.facebook.react.uimanager.events.Event;
     WritableMap selectionData = Arguments.createMap();
     selectionData.putInt("end", mSelectionEnd);
     selectionData.putInt("start", mSelectionStart);
+    selectionData.putDouble("cursorPositionX", mCursorPositionX);
+    selectionData.putDouble("cursorPositionY", mCursorPositionY);
 
     eventData.putMap("selection", selectionData);
     return eventData;
