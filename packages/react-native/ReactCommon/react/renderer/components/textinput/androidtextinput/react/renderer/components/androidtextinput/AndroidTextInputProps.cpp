@@ -335,6 +335,7 @@ void AndroidTextInputProps::setProp(
   }
 
   switch (hash) {
+    RAW_SET_PROP_SWITCH_CASE_BASIC(maximumNumberOfLines);
     RAW_SET_PROP_SWITCH_CASE_BASIC(autoComplete);
     RAW_SET_PROP_SWITCH_CASE_BASIC(returnKeyLabel);
     RAW_SET_PROP_SWITCH_CASE_BASIC(numberOfLines);
