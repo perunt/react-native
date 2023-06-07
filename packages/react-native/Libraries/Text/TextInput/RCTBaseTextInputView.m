@@ -522,8 +522,8 @@ RCT_NOT_IMPLEMENTED(-(instancetype)initWithFrame : (CGRect)frame)
     @"selection" : @{
       @"start" : @(selection.start),
       @"end" : @(selection.end),
-      @"positionY": @(selectionOrigin.y),
-      @"positionX": @(selectionOrigin.x),
+      @"cursorPositionY": @(selectionOrigin.y),
+      @"cursorPositionX": @(selectionOrigin.x),
     },
   });
 }
