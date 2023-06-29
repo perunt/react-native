@@ -34,7 +34,6 @@ import com.facebook.react.uimanager.events.Event;
       int cursorPositionEndX,
       int cursorPositionEndY) {
     this(-1, viewId, selectionStart, selectionEnd, cursorPositionStartX, cursorPositionStartY, cursorPositionEndX, cursorPositionEndY);
-
   }
 
   public ReactTextInputSelectionEvent(
