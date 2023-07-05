@@ -69,6 +69,16 @@ export type FocusEvent = TargetEvent;
 type Selection = $ReadOnly<{|
   start: number,
   end: number,
+  cursorPosition: $ReadOnly<{|
+    start: $ReadOnly<{|
+      x: number,
+      y: number,
+    |}>,
+    end: $ReadOnly<{|
+      x: number,
+      y: number,
+    |}>,
+  |}>,
 |}>;
 
 export type SelectionChangeEvent = SyntheticEvent<
@@ -295,6 +305,16 @@ type IOSProps = $ReadOnly<{|
    * @platform ios
    */
   lineBreakStrategyIOS?: ?('none' | 'standard' | 'hangul-word' | 'push-out'),
+
+  /**
+   * If `false`, the iOS system will not insert an extra space after a paste operation
+   * neither delete one or two spaces after a cut or delete operation.
+   *
+   * The default value is `true`.
+   *
+   * @platform ios
+   */
+  smartInsertDelete?: ?boolean,
 |}>;
 
 type AndroidProps = $ReadOnly<{|
@@ -827,6 +847,16 @@ export type Props = $ReadOnly<{|
   selection?: ?$ReadOnly<{|
     start: number,
     end?: ?number,
+    cursorPosition: $ReadOnly<{|
+      start: $ReadOnly<{|
+        x: number,
+        y: number,
+      |}>,
+      end: $ReadOnly<{|
+        x: number,
+        y: number,
+      |}>,
+    |}>,
   |}>,
 
   /**

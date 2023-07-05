@@ -409,7 +409,20 @@ export type NativeProps = $ReadOnly<{|
   onSelectionChange?: ?DirectEventHandler<
     $ReadOnly<{|
       target: Int32,
-      selection: $ReadOnly<{|start: Double, end: Double|}>,
+      selection: $ReadOnly<{|
+        start: Double,
+        end: Double,
+        cursorPosition: $ReadOnly<{|
+          start: $ReadOnly<{|
+            x: Double,
+            y: Double,
+          |}>,
+          end: $ReadOnly<{|
+            x: Double,
+            y: Double,
+          |}>,
+        |}>,
+      |}>,
     |}>,
   >,
 
@@ -692,7 +705,6 @@ export const __INTERNAL_VIEW_CONFIG: PartialViewConfig = {
     fontStyle: true,
     textShadowOffset: true,
     selectionColor: {process: require('../../StyleSheet/processColor').default},
-    selection: true,
     placeholderTextColor: {
       process: require('../../StyleSheet/processColor').default,
     },
