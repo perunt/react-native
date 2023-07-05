@@ -6,6 +6,7 @@
  */
 
 #include "TextInputEventEmitter.h"
+#include <iostream>
 
 namespace facebook::react {
 
@@ -31,6 +32,31 @@ static jsi::Value textInputMetricsPayload(
         textInputMetrics.selectionRange.location +
             textInputMetrics.selectionRange.length);
     payload.setProperty(runtime, "selection", selection);
+        auto cursorPosition = jsi::Object(runtime);
+    auto cursorStartPosition = jsi::Object(runtime);
+
+    cursorStartPosition.setProperty(
+        runtime,
+        "x",
+        textInputMetrics.cursorPosition.start.first);
+    cursorStartPosition.setProperty(
+        runtime,
+        "y",
+        textInputMetrics.cursorPosition.start.second);
+    cursorPosition.setProperty(runtime, "start", cursorStartPosition);
+
+    auto cursorEndPosition = jsi::Object(runtime);
+    cursorEndPosition.setProperty(
+        runtime,
+        "x",
+        textInputMetrics.cursorPosition.end.first);
+    cursorEndPosition.setProperty(
+        runtime,
+        "y",
+        textInputMetrics.cursorPosition.end.second);
+    cursorPosition.setProperty(runtime, "end", cursorEndPosition);
+
+    selection.setProperty(runtime, "cursorPosition", cursorPosition);
   }
 
   return payload;
