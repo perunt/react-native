@@ -13,6 +13,11 @@
 namespace facebook {
 namespace react {
 
+struct CursorPosition {
+  std::pair<int, int> start;
+  std::pair<int, int> end;
+};
+
 class TextInputMetrics {
  public:
   std::string text;
@@ -25,6 +30,7 @@ class TextInputMetrics {
   int eventCount;
   Size layoutMeasurement;
   float zoomScale;
+  CursorPosition cursorPosition;
 };
 
 class KeyPressMetrics {

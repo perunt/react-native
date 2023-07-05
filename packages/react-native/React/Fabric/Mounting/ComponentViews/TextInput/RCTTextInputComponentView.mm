@@ -54,6 +54,7 @@ using namespace facebook::react;
    * In multiline text input this is undesirable as we don't want to be sending events for changes that JS triggered.
    */
   BOOL _comingFromJS;
+  BOOL _isHandlingSelectionChange;
   BOOL _didMoveToWindow;
 }
 
@@ -467,6 +468,9 @@ using namespace facebook::react;
     UITextRange *range = [_backedTextInputView textRangeFromPosition:startPosition toPosition:endPosition];
     [_backedTextInputView setSelectedTextRange:range notifyDelegate:NO];
   }
+    if (_eventEmitter) {
+     std::static_pointer_cast<TextInputEventEmitter const>(_eventEmitter)->onSelectionChange([self _textInputMetrics]);
+    }
   _comingFromJS = NO;
 }
 
@@ -529,6 +533,7 @@ using namespace facebook::react;
   TextInputMetrics metrics;
   metrics.text = RCTStringFromNSString(_backedTextInputView.attributedText.string);
   metrics.selectionRange = [self _selectionRange];
+  metrics.cursorPosition = [self _cursorPosition];
   metrics.eventCount = _mostRecentEventCount;
 
   CGPoint contentOffset = _backedTextInputView.contentOffset;
@@ -572,6 +577,36 @@ using namespace facebook::react;
                                                 toPosition:selectedTextRange.end];
   return AttributedString::Range{(int)start, (int)(end - start)};
 }
+
+- (CursorPosition)_cursorPosition
+{
+  UITextRange *selectedTextRange = _backedTextInputView.selectedTextRange;
+  
+  // Get the caret rectangle for the start of the selected text range.
+  CGRect caretRectStart = [_backedTextInputView caretRectForPosition:selectedTextRange.start];
+  CGPoint cursorPositionStart = caretRectStart.origin;
+  
+  // Get the caret rectangle for the end of the selected text range.
+  CGRect caretRectEnd = [_backedTextInputView caretRectForPosition:selectedTextRange.end];
+  CGPoint cursorPositionEnd = caretRectEnd.origin;
+  CGSize cursorPositionEndSize = caretRectEnd.size;
+  
+  // Check if y-values are negative(can be -1). If yes, set them to 0.
+  cursorPositionStart.y = cursorPositionStart.y < 0 ? 0 : cursorPositionStart.y;
+  cursorPositionEnd.y = cursorPositionEnd.y < 0 ? 0 : cursorPositionEnd.y;
+  
+  // Create a pair of integers representing the x and y coordinates of the cursor positions.
+  std::pair<int, int> cursorPositionStartInt = {static_cast<int>(cursorPositionStart.x), static_cast<int>(cursorPositionStart.y)};
+  std::pair<int, int> cursorPositionEndInt = {static_cast<int>(cursorPositionEnd.x + cursorPositionEndSize.width), static_cast<int>(cursorPositionEnd.y + cursorPositionEndSize.height)};
+  
+  // Create a CursorPosition structure and set the start and end cursor positions.
+  CursorPosition cursorPosition = {cursorPositionStartInt, cursorPositionEndInt};
+
+  return cursorPosition;
+}
+
+
+
 
 - (void)_restoreTextSelection
 {
